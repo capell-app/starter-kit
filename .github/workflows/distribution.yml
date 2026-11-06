@@ -26,7 +26,9 @@ jobs:
           export PATH="$(composer global config bin-dir --absolute):$PATH"
           mkdir -p "$RUNNER_TEMP/starter-consumer"
           cd "$RUNNER_TEMP/starter-consumer"
-          laravel new x --using=capell-app/starter-kit --pest --no-boost --no-interaction
+          mkdir -p "$RUNNER_TEMP/distribution-evidence"
+          laravel new x --using=capell-app/starter-kit --pest --no-boost --no-interaction 2>&1 | tee "$RUNNER_TEMP/distribution-evidence/install.log"
+          if grep -E "PHP (Warning|Fatal error):" "$RUNNER_TEMP/distribution-evidence/install.log"; then exit 1; fi
           cd x
           vendor/bin/pest --ci
       - name: Prepare the browser
