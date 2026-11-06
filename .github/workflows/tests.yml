@@ -1,0 +1,29 @@
+name: Starter kit
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: shivammathur/setup-php@d52fc211a0436f8839a587b3b5b8efddab4744ea
+        with:
+          php-version: '8.4'
+          extensions: intl, mbstring, pdo_sqlite, exif, gd, zip
+          coverage: none
+      - run: composer install --no-interaction --prefer-dist
+      - run: composer run setup
+      - run: composer run lint
+      - run: vendor/bin/pest --ci
+      - run: bash -n scripts/deploy.sh
+      - run: php artisan config:cache && php artisan route:cache && php artisan view:cache
+      - name: Prove a fresh Composer project
+        run: |
+          git branch install-canary HEAD
+          composer create-project capell-app/starter-kit "$RUNNER_TEMP/studio" dev-install-canary --repository='{"type":"vcs","url":"'"$GITHUB_WORKSPACE"'"}' --no-interaction
+          cd "$RUNNER_TEMP/studio"
+          vendor/bin/pest --ci
