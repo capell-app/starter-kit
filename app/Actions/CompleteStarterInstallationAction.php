@@ -15,8 +15,9 @@ final class CompleteStarterInstallationAction
 {
     public function handle(): void
     {
-        if (! is_file(resource_path('css/capell/frontend.css'))) {
-            GenerateTailwindAssetsAction::run();
+        $supportCss = resource_path('css/capell/frontend.css');
+        if (! is_file($supportCss)) {
+            GenerateTailwindAssetsAction::run($supportCss);
         }
         $core = CapellExtension::query()->firstOrNew(['composer_name' => 'capell-app/core']);
         if ($core->installed_at !== null) {
