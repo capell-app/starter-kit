@@ -10,6 +10,7 @@ use App\Filament\Widgets\StudioSettingsWidget;
 use App\Mail\ContactMessage;
 use App\Models\StudioSetting;
 use App\Models\User;
+use Capell\Admin\Filament\Pages\CapellDashboard;
 use Capell\Admin\Filament\Resources\Pages\Pages\EditPage;
 use Capell\Core\Models\Blueprint;
 use Capell\Core\Models\Page;
@@ -179,4 +180,9 @@ it('rolls back a colliding example and can recover after the URL is released', f
     app(SeedStarterSiteAction::class)->handle();
     expect(Page::count())->toBe($count + 1);
     $this->get('/')->assertOk();
+});
+
+it('shows the settings widget on the actual Capell dashboard', function (): void {
+    $this->actingAs(User::query()->where('email', 'admin@example.test')->firstOrFail());
+    Livewire::test(CapellDashboard::class)->assertSeeLivewire(StudioSettingsWidget::class);
 });

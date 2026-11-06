@@ -24,6 +24,12 @@ jobs:
         run: |
           composer global require laravel/installer --no-interaction --prefer-dist
           export PATH="$(composer global config bin-dir --absolute):$PATH"
+          git archive --format=tar HEAD | tar -t | grep -Fx '.github/workflows/tests.yml'
+          if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
+            # The PR proves the candidate; scheduled/manual runs prove Packagist.
+            git branch --force main HEAD
+            composer config --global repositories.starter-kit vcs "$GITHUB_WORKSPACE"
+          fi
           mkdir -p "$RUNNER_TEMP/starter-consumer"
           cd "$RUNNER_TEMP/starter-consumer"
           mkdir -p "$RUNNER_TEMP/distribution-evidence"

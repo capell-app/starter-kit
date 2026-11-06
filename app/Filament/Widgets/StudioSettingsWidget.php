@@ -14,6 +14,8 @@ use Override;
 
 final class StudioSettingsWidget extends Widget
 {
+    protected static ?bool $isLazyLoaded = false;
+
     protected string $view = 'filament.widgets.studio-settings';
 
     public string $studioName = '';
