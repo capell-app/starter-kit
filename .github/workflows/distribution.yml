@@ -49,7 +49,7 @@ jobs:
           import { readFile, writeFile } from 'node:fs/promises';
           import { setTimeout } from 'node:timers/promises';
           const { chromium } = await import(process.env.BROWSER_MODULE);
-          const base = 'http://127.0.0.1:8000';
+          const base = 'http://localhost:8000';
           let ready = false;
           for (let attempt = 0; attempt < 40; attempt++) {
             try { ready = (await fetch(`${base}/up`)).ok; } catch {}
