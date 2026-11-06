@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Filament\Configurators\Pages\CaseStudyPageConfigurator;
+use App\Filament\Widgets\StudioSettingsWidget;
 use App\Models\User;
 use App\Support\StudioRenderDataContributor;
 use Capell\Admin\Data\AdminSurfaceContributionData;
+use Capell\Admin\Enums\DashboardEnum;
 use Capell\Admin\Facades\CapellAdmin;
 use Capell\Core\Support\Themes\LayoutViewRegistry;
 use Capell\Frontend\Contracts\PublicRenderDataContributor;
@@ -28,6 +30,7 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        CapellAdmin::registerDashboardFilamentWidget(StudioSettingsWidget::class, DashboardEnum::Main);
         CapellAdmin::contributeToAdminSurface(AdminSurfaceContributionData::configurator(
             class: CaseStudyPageConfigurator::class, group: 'Pages', name: 'CaseStudy', owner: 'app',
         ));
