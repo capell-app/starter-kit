@@ -51,7 +51,7 @@ Pest exercises public CMS routes, escaping, Admin access and custom-field editin
 
 Generated dependency migrations are excluded from source formatting; `composer run lint` checks the authored migration separately.
 
-Ordinary CI installs the committed lockfile, runs all examples and creates a fresh Composer project from the exact Git revision. The daily **Released Capell canary** also runs on `repository_dispatch` with event type `capell-release` and manual dispatch. It discovers the latest stable Packagist releases, writes exact pins, resolves a lockfile and runs Pest before opening an update PR. The daily schedule is a fallback when a release publisher does not send the dispatch; this repository cannot configure another repository's release hooks.
+Ordinary CI installs the committed lockfile, runs all examples and creates a fresh Composer project from the exact Git revision. The daily **Released Capell canary** also runs on `repository_dispatch` with event type `capell-release` and manual dispatch. It discovers the latest stable Packagist releases, writes temporary exact pins, resolves a lockfile and runs Pest. Dependabot checks daily and groups Capell pin/lock updates into one PR, which runs the ordinary fresh-project CI. This works with the repository’s read-only default Actions token; workflows do not need permission to approve or create their own PRs. The daily schedule is a fallback when a release publisher does not send the dispatch; this repository cannot configure another repository's release hooks.
 
 To maintain pins locally:
 

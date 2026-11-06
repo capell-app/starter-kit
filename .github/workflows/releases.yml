@@ -6,8 +6,7 @@ on:
     types: [capell-release]
   workflow_dispatch:
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 concurrency:
   group: capell-release-canary
   cancel-in-progress: false
@@ -25,16 +24,3 @@ jobs:
       - run: composer update --no-interaction --prefer-dist
       - run: composer run setup
       - run: vendor/bin/pest --ci
-      - name: Propose verified release pins
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          if git diff --quiet -- composer.json composer.lock; then exit 0; fi
-          branch="automation/capell-release-${GITHUB_RUN_ID}"
-          git switch -c "$branch"
-          git config user.name 'Capell release maintenance'
-          git config user.email 'capell.app26@gmail.com'
-          git add composer.json composer.lock
-          git commit -m 'chore: verify starter kit against released Capell'
-          git push origin "$branch"
-          gh pr create --base main --head "$branch" --title 'Update verified Capell release pins' --body 'The release canary installed the latest stable packages from Packagist and passed every example test before proposing these exact pins.'
