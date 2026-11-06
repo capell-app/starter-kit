@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Actions\CompleteStarterInstallationAction;
 use App\Actions\CreateStarterAdministratorAction;
 use App\Actions\PublishStarterMigrationsAction;
 use App\Actions\SeedStarterSiteAction;
@@ -51,6 +52,7 @@ final class InstallStarterCommand extends Command
         $created = DB::transaction(function () use ($email, $seed): bool {
             $created = app(CreateStarterAdministratorAction::class)->handle($email);
             $seed->handle();
+            app(CompleteStarterInstallationAction::class)->handle();
 
             return $created;
         });

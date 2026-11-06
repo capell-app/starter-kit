@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Actions\CompleteStarterInstallationAction;
 use App\Actions\CreateStarterAdministratorAction;
 use App\Actions\SaveStudioSettingsAction;
 use App\Actions\SeedStarterSiteAction;
@@ -12,14 +13,21 @@ use App\Models\StudioSetting;
 use App\Models\User;
 use Capell\Admin\Filament\Pages\CapellDashboard;
 use Capell\Admin\Filament\Resources\Pages\Pages\EditPage;
+use Capell\Core\Actions\Diagnostics\ResolveCapellInstallationStateAction;
+use Capell\Core\Enums\Diagnostics\CapellInstallationState;
 use Capell\Core\Models\Blueprint;
+use Capell\Core\Models\Layout;
 use Capell\Core\Models\Page;
 use Capell\Core\Models\Site;
+use Capell\Core\Models\Theme;
+use Capell\Core\Support\Runtime\RuntimeRolePackageManifest;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Filesystem\FilesystemManager;
+use Illuminate\Foundation\PackageManifest;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
@@ -185,4 +193,41 @@ it('rolls back a colliding example and can recover after the URL is released', f
 it('shows the settings widget on the actual Capell dashboard', function (): void {
     $this->actingAs(User::query()->where('email', 'admin@example.test')->firstOrFail());
     Livewire::test(CapellDashboard::class)->assertSeeLivewire(StudioSettingsWidget::class);
+});
+
+it('provides default design records for newly authored pages', function (): void {
+    expect(Theme::query()->where('default', true)->firstOrFail()->key)->toBe('studio')
+        ->and(Layout::query()->where('default', true)->firstOrFail()->key)->toBe('studio');
+});
+
+it('records a completed Core installation', function (): void {
+    expect(ResolveCapellInstallationStateAction::run())->toBe(CapellInstallationState::Installed);
+});
+
+it('boots the released Capell runtime contract', function (): void {
+    expect(app(PackageManifest::class))->toBeInstanceOf(RuntimeRolePackageManifest::class)
+        ->and(app()->getCachedConfigPath())->toContain('/capell-runtime/combined/');
+});
+
+it('passes the released health check after bootstrap', function (): void {
+    $this->artisan('capell:doctor')->assertSuccessful();
+});
+
+it('preserves edited custom CSS while creating missing starter support CSS', function (): void {
+    $originalBase = base_path();
+    $temporary = storage_path('framework/testing/starter-assets-'.Str::uuid()->toString());
+    File::ensureDirectoryExists($temporary.'/resources/views');
+    $custom = $temporary.'/authored.css';
+    $edited = 'body { color: rebeccapurple; }';
+    file_put_contents($custom, $edited);
+    app()->setBasePath($temporary);
+    config(['capell-frontend.tailwind.output_css' => $custom]);
+    try {
+        app(CompleteStarterInstallationAction::class)->handle();
+        expect(file_get_contents($custom))->toBe($edited)
+            ->and(is_file($temporary.'/resources/css/capell/frontend.css'))->toBeTrue();
+    } finally {
+        app()->setBasePath($originalBase);
+        File::deleteDirectory($temporary);
+    }
 });
