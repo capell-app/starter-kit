@@ -12,7 +12,8 @@ permissions:
   contents: read
 jobs:
   consumer:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - uses: shivammathur/setup-php@d52fc211a0436f8839a587b3b5b8efddab4744ea
@@ -41,7 +42,7 @@ jobs:
       - name: Prepare the browser
         run: |
           npm install --prefix "$RUNNER_TEMP/browser" --ignore-scripts --no-save playwright@1.65.0
-          "$RUNNER_TEMP/browser/node_modules/.bin/playwright" install --with-deps chromium
+          google-chrome --version
       - name: Prove the site and authenticated Admin
         env:
           EVIDENCE_DIR: ${{ runner.temp }}/distribution-evidence
@@ -66,7 +67,7 @@ jobs:
             await setTimeout(250);
           }
           assert(ready, 'artisan serve must become ready');
-          const browser = await chromium.launch();
+          const browser = await chromium.launch({ channel: 'chrome' });
           const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
           const errors = [];
           page.on('pageerror', error => errors.push(error.message));
