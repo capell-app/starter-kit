@@ -22,6 +22,7 @@ jobs:
       - run: bash -n scripts/deploy.sh
       - run: php artisan config:cache && php artisan route:cache && php artisan view:cache
       - name: Prove a fresh Composer project
+        if: github.repository == 'capell-app/starter-kit'
         run: |
           git branch install-canary HEAD
           composer create-project capell-app/starter-kit "$RUNNER_TEMP/studio" dev-install-canary --repository='{"type":"vcs","url":"'"$GITHUB_WORKSPACE"'"}' --no-interaction
