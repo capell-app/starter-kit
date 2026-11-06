@@ -1,0 +1,17 @@
+{
+  "key": "studio",
+  "name": "Studio",
+  "description": "An app-local editorial studio theme.",
+  "package": "capell-app/starter-kit",
+  "previewImage": "/images/studio-preview.svg",
+  "runtime": "blade",
+  "presets": [
+    {
+      "key": "paper",
+      "name": "Paper",
+      "description": "Warm paper with forest green typography.",
+      "previewImage": "/images/studio-preview.svg",
+      "values": {}
+    }
+  ]
+}
