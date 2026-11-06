@@ -20,7 +20,7 @@ composer run setup
 php artisan serve
 ```
 
-Setup creates missing schema and examples. Repeating it preserves the application key, administrator credentials, edited content, page names and withdrawn routes. It never runs `migrate:fresh`.
+Setup configures Capell’s runtime bootstrap, creates missing schema and examples, records Core installation completion, and generates missing frontend support CSS without overwriting an edited copy. Repeating it preserves the application key, administrator credentials, edited content, page names and withdrawn routes. It never runs `migrate:fresh`.
 
 ## Examples to copy
 
@@ -44,6 +44,7 @@ The stylesheet is authored source served directly from `public/css/starter.css`.
 ```sh
 vendor/bin/pest --ci
 composer run lint
+php artisan capell:doctor
 bash -n scripts/deploy.sh
 ```
 

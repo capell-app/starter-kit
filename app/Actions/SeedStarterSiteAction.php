@@ -36,9 +36,12 @@ final class SeedStarterSiteAction
             }
             $layout = Layout::query()->firstOrCreate(['key' => 'studio'], [
                 'name' => 'Studio', 'theme_id' => $theme->id, 'site_id' => $site->id,
-                'default' => false, 'status' => true,
+                'default' => true, 'status' => true,
                 'meta' => ['layout_file' => 'capell.themes.capell-app.studio.layout', 'master_file' => 'capell.themes.capell-app.studio.empty'],
             ]);
+            if (! Layout::query()->where('default', true)->exists()) {
+                $layout->update(['default' => true]);
+            }
             foreach ([
                 ['home', 'Home', '/', 'home_title', 'home_summary'],
                 ['case-study', 'Field Notes', '/work/field-notes', 'case_title', 'case_summary'],

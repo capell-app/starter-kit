@@ -23,4 +23,5 @@ jobs:
       - run: php scripts/pin-capell-release.php --write
       - run: composer update --no-interaction --prefer-dist
       - run: composer run setup
+      - run: php artisan capell:doctor --no-interaction
       - run: vendor/bin/pest --ci

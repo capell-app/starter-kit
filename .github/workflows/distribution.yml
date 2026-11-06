@@ -37,6 +37,7 @@ jobs:
           if grep -E "PHP (Warning|Fatal error):" "$RUNNER_TEMP/distribution-evidence/install.log"; then exit 1; fi
           cd x
           vendor/bin/pest --ci
+          php artisan capell:doctor --no-interaction
       - name: Prepare the browser
         run: |
           npm install --prefix "$RUNNER_TEMP/browser" --ignore-scripts --no-save playwright@1.65.0
