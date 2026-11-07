@@ -8,6 +8,10 @@ cd my-studio
 php artisan serve
 ```
 
+`laravel new` may also suggest `npm install && npm run build` and `composer run dev`. Neither is required: the build step only prints a confirmation, and `composer run dev` runs `php artisan serve`.
+
+Keep port 8000 free. The site is bound to `APP_URL`, `http://localhost:8000`, so serving on another port redirects to it. To use a different address in a Git checkout, change `APP_URL` before running setup.
+
 Open <http://localhost:8000> for the studio and <http://localhost:8000/admin> for Admin. Installation creates `admin@example.test` with a random password saved to `storage/app/private/starter-admin-password` (owner-readable only). Store the password securely and delete that file. Credentials, `.env` and SQLite data are never included in the repository or distribution.
 
 The default mail driver is `log`: contact messages appear in `storage/logs/laravel.log`. Configure a real mail transport and change **Enquiry recipient** in the Admin dashboard before accepting real enquiries.
