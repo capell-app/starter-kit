@@ -1,0 +1,118 @@
+diff --git a/app/Actions/SeedStarterSiteAction.php b/app/Actions/SeedStarterSiteAction.php
+index 8552b01..a13ce5a 100644
+--- a/app/Actions/SeedStarterSiteAction.php
++++ b/app/Actions/SeedStarterSiteAction.php
+@@ -45,18 +45,19 @@ public function handle(): void
+             foreach ([
+                 ['home', 'Home', '/', 'home_title', 'home_summary'],
+                 ['case-study', 'Field Notes', '/work/field-notes', 'case_title', 'case_summary'],
++                ['service', 'Brand Sprint', '/services/brand-sprint', 'service_title', 'service_summary'],
+                 ['contact', 'Contact', '/contact', 'contact_title', 'contact_summary'],
+             ] as [$key, $name, $url, $title, $summary]) {
+                 $blueprint = Blueprint::query()->firstOrCreate(['key' => $key, 'type' => BlueprintSubjectEnum::Page], [
+                     'name' => $name, 'default' => false,
+-                    'admin' => ['configurator' => $key === 'case-study' ? 'CaseStudy' : 'Default'],
++                    'admin' => ['configurator' => match ($key) { 'case-study' => 'CaseStudy', 'service' => 'Service', default => 'Default' }],
+                     'meta' => ['rendering_strategy' => 'blade'],
+                 ]);
+                 $uuid = Uuid::uuid5(Uuid::NAMESPACE_URL, 'https://github.com/capell-app/starter-kit/'.$key)->toString();
+                 $page = Page::query()->firstOrCreate(['uuid' => $uuid], [
+                     'name' => $name, 'site_id' => $site->id,
+                     'blueprint_id' => $blueprint->id, 'layout_id' => $layout->id,
+-                    'meta' => $key === 'case-study' ? ['client' => 'Field Notes', 'year' => '2026'] : [],
++                    'meta' => match ($key) { 'case-study' => ['client' => 'Field Notes', 'year' => '2026'], 'service' => ['price' => 'From £4,000'], default => [] },
+                 ]);
+                 if ($page->wasRecentlyCreated) {
+                     $page->update(['layout_id' => $layout->id, 'meta' => [...($page->meta ?? []), 'studio_seeded' => true]]);
+diff --git a/app/Filament/Configurators/Pages/ServicePageConfigurator.php b/app/Filament/Configurators/Pages/ServicePageConfigurator.php
+new file mode 100644
+index 0000000..e63cd76
+--- /dev/null
++++ b/app/Filament/Configurators/Pages/ServicePageConfigurator.php
+@@ -0,0 +1,25 @@
++<?php
++
++declare(strict_types=1);
++
++namespace App\Filament\Configurators\Pages;
++
++use Capell\Admin\Filament\Configurators\Pages\DefaultPageConfigurator;
++use Filament\Forms\Components\TextInput;
++use Filament\Schemas\Components\Section;
++use Filament\Schemas\Schema;
++use Override;
++
++final class ServicePageConfigurator extends DefaultPageConfigurator
++{
++    #[Override]
++    protected function getEditFormSchema(Schema $schema): array
++    {
++        return [
++            ...parent::getEditFormSchema($schema),
++            Section::make(__('starter.service'))->schema([
++                TextInput::make('meta.price')->label(__('starter.price'))->required()->maxLength(50),
++            ]),
++        ];
++    }
++}
+diff --git a/app/Providers/AppServiceProvider.php b/app/Providers/AppServiceProvider.php
+index dff33c3..f058f9a 100644
+--- a/app/Providers/AppServiceProvider.php
++++ b/app/Providers/AppServiceProvider.php
+@@ -5,6 +5,7 @@
+ namespace App\Providers;
+ 
+ use App\Filament\Configurators\Pages\CaseStudyPageConfigurator;
++use App\Filament\Configurators\Pages\ServicePageConfigurator;
+ use App\Filament\Widgets\StudioSettingsWidget;
+ use App\Models\User;
+ use App\Support\StudioRenderDataContributor;
+@@ -34,6 +35,9 @@ public function boot(): void
+         CapellAdmin::contributeToAdminSurface(AdminSurfaceContributionData::configurator(
+             class: CaseStudyPageConfigurator::class, group: 'Pages', name: 'CaseStudy', owner: 'app',
+         ));
++        CapellAdmin::contributeToAdminSurface(AdminSurfaceContributionData::configurator(
++            class: ServicePageConfigurator::class, group: 'Pages', name: 'Service', owner: 'app',
++        ));
+         $views = app(LayoutViewRegistry::class);
+         $views->registerLayout('capell.themes.capell-app.studio.layout', 'Studio');
+         $views->registerMaster('capell.themes.capell-app.studio.empty', 'Studio');
+diff --git a/app/Support/StudioRenderDataContributor.php b/app/Support/StudioRenderDataContributor.php
+index 0d131b7..88ead93 100644
+--- a/app/Support/StudioRenderDataContributor.php
++++ b/app/Support/StudioRenderDataContributor.php
+@@ -54,6 +54,7 @@ public function contribute(FrontendRenderContextData $context): PublicRenderData
+         return new PublicRenderDataContributionData((object) [
+             'client' => $context->page->meta['client'] ?? '',
+             'year' => $context->page->meta['year'] ?? '',
++            'price' => $context->page->meta['price'] ?? '',
+             'name' => $settings->name,
+             'title' => $translation->title,
+             'summary' => $translation->meta['summary'] ?? '',
+diff --git a/lang/en/starter.php b/lang/en/starter.php
+index ff39843..ef841d6 100644
+--- a/lang/en/starter.php
++++ b/lang/en/starter.php
+@@ -1,6 +1,10 @@
+ <?php
+ 
+ return [
++    'service' => 'Service',
++    'price' => 'Price',
++    'service_title' => 'Brand Sprint',
++    'service_summary' => 'Two weeks to a clearer brand.',
+     'contact_email' => 'Enquiry recipient',
+     'client' => 'Client', 'year' => 'Year',
+     'work' => 'Our work', 'contact' => 'Start a conversation', 'admin' => 'Admin',
+diff --git a/resources/views/capell/themes/capell-app/studio/layout.blade.php b/resources/views/capell/themes/capell-app/studio/layout.blade.php
+index 1a4b919..a309818 100644
+--- a/resources/views/capell/themes/capell-app/studio/layout.blade.php
++++ b/resources/views/capell/themes/capell-app/studio/layout.blade.php
+@@ -14,6 +14,7 @@
+     <p class="eyebrow">{{ $studio->kind === 'case-study' ? __('starter.case_study') : __('starter.eyebrow') }}</p>
+     <h1>{{ $studio->title }}</h1><p class="intro">{{ $studio->summary }}</p>
+     @if($studio->kind === 'case-study')<dl><dt>{{ __('starter.client') }}</dt><dd>{{ $studio->client }}</dd><dt>{{ __('starter.year') }}</dt><dd>{{ $studio->year }}</dd></dl>@endif
++    @if($studio->kind === 'service')<p class="price">{{ __('starter.price') }}: {{ $studio->price }}</p>@endif
+     @if($studio->kind === 'contact')
+         <form action="{{ route('contact.send') }}" method="post">
+             @csrf

@@ -8,5 +8,6 @@
 
 /.github/workflows/releases.yml export-ignore
 /.github/workflows/distribution.yml export-ignore
+/.github/guide export-ignore
 CHANGELOG.md export-ignore
 .styleci.yml export-ignore

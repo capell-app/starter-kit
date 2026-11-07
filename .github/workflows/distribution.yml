@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - .github/workflows/distribution.yml
+      - .github/guide/**
   workflow_dispatch:
   schedule:
     - cron: '43 7 * * *'
@@ -39,6 +40,24 @@ jobs:
           cd x
           vendor/bin/pest --ci
           php artisan capell:doctor --no-interaction
+      - name: Follow the client site guide
+        working-directory: ${{ runner.temp }}/starter-consumer/x
+        run: |
+          npm install --ignore-scripts
+          npm run build
+          cp database/database.sqlite "$RUNNER_TEMP/guide-database.sqlite"
+          patch -p1 < "$GITHUB_WORKSPACE/.github/guide/service-page-type.patch"
+          composer run setup
+          php artisan serve --host=127.0.0.1 --port=8000 > "$RUNNER_TEMP/guide-serve.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 40); do curl -fsS http://localhost:8000/up > /dev/null && break; sleep 0.25; done
+          curl -fsS http://localhost:8000/services/brand-sprint | grep -F 'From £4,000'
+          kill "$server_pid"
+          wait "$server_pid" || true
+          patch -R -p1 < "$GITHUB_WORKSPACE/.github/guide/service-page-type.patch"
+          cp "$RUNNER_TEMP/guide-database.sqlite" database/database.sqlite
+          php artisan optimize:clear
       - name: Prepare the browser
         run: |
           npm install --prefix "$RUNNER_TEMP/browser" --ignore-scripts --no-save playwright@1.65.0
