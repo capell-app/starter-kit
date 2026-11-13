@@ -1,6 +1,6 @@
 # Capell starter kit
 
-A standalone Laravel 13 application with Capell Core, Admin and Frontend pinned to exact released versions in `composer.json` and `composer.lock`, installed from Packagist. PHP 8.4+, Composer and SQLite are required. No Node build or queue worker is needed to try the site.
+A standalone Laravel 13 application with Capell Core, Admin and Frontend pinned to exact released versions in `composer.json` and `composer.lock`, installed from Packagist. PHP 8.4+, Composer and SQLite are required to try the site. Deploys also need Node 20+ and npm, because the Capell frontend stylesheet is generated and built on the server.
 
 ```sh
 laravel new my-studio --using=capell-app/starter-kit
@@ -8,7 +8,7 @@ cd my-studio
 php artisan serve
 ```
 
-`laravel new` may also suggest `npm install && npm run build` and `composer run dev`. Neither is required: the build step only prints a confirmation, and `composer run dev` runs `php artisan serve`.
+`laravel new` may also suggest `npm install && npm run build` and `composer run dev`. Run `npm install && npm run build` when you change theme templates, so the Capell frontend stylesheet picks up new classes. `composer run dev` runs `php artisan serve`.
 
 Keep port 8000 free. The site is bound to `APP_URL`, `http://localhost:8000`, so serving on another port redirects to it. To use a different address in a Git checkout, change `APP_URL` before running setup.
 
@@ -88,4 +88,4 @@ For subsequent releases:
 bash scripts/deploy.sh
 ```
 
-The script publishes migrations from locked dependencies, applies schema/settings migrations, publishes Admin assets, rebuilds package/config/route/view caches and restarts queue workers. It does not reseed content, rotate the key, reset data, switch symlinks or manage backups. Keep production database/storage paths outside disposable release directories.
+The script publishes migrations from locked dependencies, applies schema/settings migrations, publishes Admin assets, installs Node dependencies and builds the Capell frontend stylesheet with Vite, rebuilds package/config/route/view caches and restarts queue workers. It does not reseed content, rotate the key, reset data, switch symlinks or manage backups. Keep production database/storage paths outside disposable release directories.
