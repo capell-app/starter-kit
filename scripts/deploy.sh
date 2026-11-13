@@ -8,6 +8,8 @@ composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
 "$PHP_BINARY" artisan migrate --force --no-interaction
 "$PHP_BINARY" artisan migrate --path=database/settings --force --no-interaction
 "$PHP_BINARY" artisan filament:assets --no-interaction
+npm ci --no-audit --no-fund
+"$PHP_BINARY" artisan capell:frontend-after-install --apply --no-interaction
 "$PHP_BINARY" artisan capell:package-cache --no-interaction
 "$PHP_BINARY" artisan config:cache --no-interaction
 "$PHP_BINARY" artisan route:cache --no-interaction
