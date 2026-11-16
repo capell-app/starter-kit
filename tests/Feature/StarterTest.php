@@ -25,6 +25,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Filesystem\FilesystemManager;
 use Illuminate\Foundation\PackageManifest;
+use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\File;
@@ -230,4 +231,23 @@ it('preserves edited custom CSS while creating missing starter support CSS', fun
         app()->setBasePath($originalBase);
         File::deleteDirectory($temporary);
     }
+});
+
+it('stores database notifications for the administrator', function (): void {
+    $administrator = User::query()->where('email', 'admin@example.test')->firstOrFail();
+
+    $administrator->notify(new class extends Notification
+    {
+        public function via(object $notifiable): array
+        {
+            return ['database'];
+        }
+
+        public function toArray(object $notifiable): array
+        {
+            return ['outcome' => 'completed'];
+        }
+    });
+
+    expect($administrator->notifications()->count())->toBe(1);
 });
