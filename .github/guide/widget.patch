@@ -1,0 +1,41 @@
+diff -ruN a/app/Providers/AppServiceProvider.php b/app/Providers/AppServiceProvider.php
+--- a/app/Providers/AppServiceProvider.php	2026-11-16 14:28:51
++++ b/app/Providers/AppServiceProvider.php	2026-11-16 14:28:51
+@@ -11,6 +11,8 @@
+ use Capell\Admin\Data\AdminSurfaceContributionData;
+ use Capell\Admin\Enums\DashboardEnum;
+ use Capell\Admin\Facades\CapellAdmin;
++use Capell\Core\Data\RenderableDefinitionData;
++use Capell\Core\Support\Renderables\RenderableRegistry;
+ use Capell\Core\Support\Themes\LayoutViewRegistry;
+ use Capell\Frontend\Contracts\PublicRenderDataContributor;
+ use Illuminate\Cache\RateLimiting\Limit;
+@@ -30,6 +32,12 @@
+ 
+     public function boot(): void
+     {
++        app(RenderableRegistry::class)->register(new RenderableDefinitionData(
++            key: 'project-note',
++            type: 'layout-widget',
++            blade: 'widgets.project-note',
++        ));
++
+         CapellAdmin::registerDashboardFilamentWidget(StudioSettingsWidget::class, DashboardEnum::Main);
+         CapellAdmin::contributeToAdminSurface(AdminSurfaceContributionData::configurator(
+             class: CaseStudyPageConfigurator::class, group: 'Pages', name: 'CaseStudy', owner: 'app',
+diff -ruN a/resources/views/capell/themes/capell-app/studio/layout.blade.php b/resources/views/capell/themes/capell-app/studio/layout.blade.php
+--- a/resources/views/capell/themes/capell-app/studio/layout.blade.php	2026-11-16 14:28:51
++++ b/resources/views/capell/themes/capell-app/studio/layout.blade.php	2026-11-16 14:28:51
+@@ -12,6 +12,7 @@
+ <header><a class="brand" href="/">{{ $studio->name }}<span aria-hidden="true">✳</span></a><nav aria-label="Main"><a href="/work/field-notes">{{ __('starter.work') }}</a><a href="/contact">{{ __('starter.contact') }}</a><a href="/admin">{{ __('starter.admin') }}</a></nav></header>
+ <main id="main">
+     <p class="eyebrow">{{ $studio->kind === 'case-study' ? __('starter.case_study') : __('starter.eyebrow') }}</p>
++    <x-capell-layout-builder::layout.area :layout="$layout" :public-render-data="$publicRenderData" />
+     <h1>{{ $studio->title }}</h1><p class="intro">{{ $studio->summary }}</p>
+     @if($studio->kind === 'case-study')<dl><dt>{{ __('starter.client') }}</dt><dd>{{ $studio->client }}</dd><dt>{{ __('starter.year') }}</dt><dd>{{ $studio->year }}</dd></dl>@endif
+     @if($studio->kind === 'contact')
+diff -ruN a/resources/views/components/widgets/project-note.blade.php b/resources/views/components/widgets/project-note.blade.php
+--- a/resources/views/components/widgets/project-note.blade.php	1970-01-01 01:00:00
++++ b/resources/views/components/widgets/project-note.blade.php	2026-11-16 14:28:51
+@@ -0,0 +1 @@
++<p class="project-note">Talk to us about a similar project.</p>

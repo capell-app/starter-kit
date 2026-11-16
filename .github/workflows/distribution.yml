@@ -43,6 +43,15 @@ jobs:
           cd x
           vendor/bin/pest --ci
           php artisan capell:doctor --no-interaction
+      - name: Check the applied files match the published guides
+        run: |
+          base=https://raw.githubusercontent.com/capell-app/capell/main/docs/getting-started
+          curl -fsS "$base/build-your-first-page-type.md" -o "$RUNNER_TEMP/page-type.md"
+          curl -fsS "$base/add-a-custom-page-field.md" -o "$RUNNER_TEMP/custom-field.md"
+          python3 .github/guide/check-guide-patch.py .github/guide/service-page-type.patch "$RUNNER_TEMP/page-type.md"
+          python3 .github/guide/check-guide-patch.py .github/guide/custom-field.patch "$RUNNER_TEMP/custom-field.md"
+          python3 .github/guide/check-guide-patch.py .github/guide/widget.patch "$RUNNER_TEMP/page-type.md"
+          python3 .github/guide/check-guide-patch.py .github/guide/widget-place.sh "$RUNNER_TEMP/page-type.md"
       - name: Follow the client site guide
         working-directory: ${{ runner.temp }}/starter-consumer/x
         run: |
@@ -64,9 +73,31 @@ jobs:
           curl -fsS http://localhost:8000/services/brand-sprint | grep -F 'From £4,000'
           kill "$server_pid"
           wait "$server_pid" || true
+          patch -p1 < "$GITHUB_WORKSPACE/.github/guide/custom-field.patch"
+          cp "$GITHUB_WORKSPACE/.github/guide/custom-field-walk.php" tests/Feature/CustomFieldGuideTest.php
+          vendor/bin/pest --ci tests/Feature/CustomFieldGuideTest.php
+          rm tests/Feature/CustomFieldGuideTest.php
+          patch -R -p1 < "$GITHUB_WORKSPACE/.github/guide/custom-field.patch"
           patch -R -p1 < "$GITHUB_WORKSPACE/.github/guide/service-page-type.patch"
           cp "$RUNNER_TEMP/guide-database.sqlite" database/database.sqlite
           php artisan optimize:clear
+      - name: Follow the widget section of the page type guide
+        run: |
+          cp -R "$RUNNER_TEMP/starter-consumer/x" "$RUNNER_TEMP/starter-consumer/widget"
+          cd "$RUNNER_TEMP/starter-consumer/widget"
+          composer require capell-app/layout-builder --no-interaction
+          php artisan capell:package-cache:clear
+          php artisan capell:extension-install capell-app/layout-builder --no-interaction
+          patch -p1 < "$GITHUB_WORKSPACE/.github/guide/widget.patch"
+          bash -e "$GITHUB_WORKSPACE/.github/guide/widget-place.sh"
+          bash -e "$GITHUB_WORKSPACE/.github/guide/widget-place.sh"
+          php artisan serve --host=127.0.0.1 --port=8000 > "$RUNNER_TEMP/widget-serve.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 40); do curl -fsS http://localhost:8000/up > /dev/null && break; sleep 0.25; done
+          page=$(curl -fsS http://localhost:8000/)
+          test "$(grep -o 'Talk to us about a similar project' <<< "$page" | wc -l)" -eq 1
+          test "$(grep -o '<main' <<< "$page" | wc -l)" -eq 1
       - name: Prepare the browser
         run: |
           npm install --prefix "$RUNNER_TEMP/browser" --ignore-scripts --no-save playwright@1.65.0
