@@ -30,6 +30,7 @@ Thumbs.db
 !/database/migrations/0001_01_01_000000_create_users_table.php
 !/database/migrations/0001_01_01_000001_create_cache_table.php
 !/database/migrations/0001_01_01_000002_create_jobs_table.php
+!/database/migrations/0001_01_01_000003_create_notifications_table.php
 !/database/migrations/2026_01_01_000000_create_studio_settings_table.php
 /database/settings/*
 /public/css/*

@@ -8,7 +8,7 @@ cd my-studio
 php artisan serve
 ```
 
-`laravel new` may also suggest `npm install && npm run build` and `composer run dev`. Run `npm install && npm run build` when you change theme templates, so the Capell frontend stylesheet picks up new classes. `composer run dev` runs `php artisan serve`.
+`laravel new` may also suggest `npm install && npm run build` and `composer run dev`. On a new project, run `npm install` and then `php artisan capell:frontend-after-install --apply` instead: it generates the Capell stylesheet inputs that `npm run build` needs, and it builds the stylesheet. After that, run `npm run build` when you change theme templates so the stylesheet picks up new classes. `composer run dev` runs `php artisan serve`.
 
 Keep port 8000 free. The site is bound to `APP_URL`, `http://localhost:8000`, so serving on another port redirects to it. To use a different address in a Git checkout, change `APP_URL` before running setup.
 

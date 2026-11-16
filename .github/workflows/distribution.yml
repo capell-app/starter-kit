@@ -4,6 +4,9 @@ on:
     paths:
       - .github/workflows/distribution.yml
       - .github/guide/**
+      - vite.config.js
+      - package.json
+      - scripts/deploy.sh
   workflow_dispatch:
   schedule:
     - cron: '43 7 * * *'
@@ -44,7 +47,13 @@ jobs:
         working-directory: ${{ runner.temp }}/starter-consumer/x
         run: |
           npm install --ignore-scripts
+          if npm run build > "$RUNNER_TEMP/build-before-capell.log" 2>&1; then
+            echo 'npm run build must explain that Capell has not generated its inputs'; exit 1
+          fi
+          grep -F 'capell:frontend-after-install --apply' "$RUNNER_TEMP/build-before-capell.log"
+          php artisan capell:frontend-after-install --apply --no-interaction
           npm run build
+          ls public/build/assets/frontend-*.css
           cp database/database.sqlite "$RUNNER_TEMP/guide-database.sqlite"
           patch -p1 < "$GITHUB_WORKSPACE/.github/guide/service-page-type.patch"
           composer run setup
