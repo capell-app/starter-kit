@@ -89,8 +89,8 @@ jobs:
           php artisan capell:package-cache:clear
           php artisan capell:extension-install capell-app/layout-builder --no-interaction
           patch -p1 < "$GITHUB_WORKSPACE/.github/guide/widget.patch"
-          bash "$GITHUB_WORKSPACE/.github/guide/widget-place.sh"
-          bash "$GITHUB_WORKSPACE/.github/guide/widget-place.sh"
+          bash -e "$GITHUB_WORKSPACE/.github/guide/widget-place.sh"
+          bash -e "$GITHUB_WORKSPACE/.github/guide/widget-place.sh"
           php artisan serve --host=127.0.0.1 --port=8000 > "$RUNNER_TEMP/widget-serve.log" 2>&1 &
           server_pid=$!
           trap 'kill "$server_pid" 2>/dev/null || true' EXIT
