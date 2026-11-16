@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail when a patch the smoke test applies contains a line the published guides do not."""
+"""Fail when a patch or script the smoke test applies contains a line the published guides do not."""
 import pathlib
 import sys
 
@@ -9,9 +9,12 @@ published = {line.strip() for guide in guides for line in guide.read_text().spli
 missing = []
 
 for number, line in enumerate(patch.read_text().splitlines(), start=1):
-    if not line.startswith('+') or line.startswith('+++'):
-        continue
-    text = line[1:].strip()
+    if patch.suffix == '.patch':
+        if not line.startswith('+') or line.startswith('+++'):
+            continue
+        text = line[1:].strip()
+    else:
+        text = line.strip()
     if text and text not in published:
         missing.append((number, text))
 
@@ -21,4 +24,4 @@ if missing:
         print(f'  line {number}: {text}')
     sys.exit(1)
 
-print(f'{patch}: every added line appears in the published guides')
+print(f'{patch}: every line appears in the published guides')
