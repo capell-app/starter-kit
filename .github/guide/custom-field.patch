@@ -1,0 +1,194 @@
+diff -ruN a/app/Data/CaseStudyData.php b/app/Data/CaseStudyData.php
+--- a/app/Data/CaseStudyData.php
++++ b/app/Data/CaseStudyData.php
+@@ -0,0 +1,10 @@
++<?php
++
++declare(strict_types=1);
++
++namespace App\Data;
++
++final readonly class CaseStudyData
++{
++    public function __construct(public string $clientName) {}
++}
+diff -ruN a/app/Filament/Extenders/CaseStudyPageSchemaExtender.php b/app/Filament/Extenders/CaseStudyPageSchemaExtender.php
+--- a/app/Filament/Extenders/CaseStudyPageSchemaExtender.php
++++ b/app/Filament/Extenders/CaseStudyPageSchemaExtender.php
+@@ -0,0 +1,40 @@
++<?php
++
++declare(strict_types=1);
++
++namespace App\Filament\Extenders;
++
++use Capell\Admin\Support\Schemas\AbstractPageSchemaExtender;
++use Capell\Core\Models\Page;
++use Filament\Forms\Components\TextInput;
++use Filament\Schemas\Components\Tabs\Tab;
++use Filament\Schemas\Schema;
++use Override;
++
++final class CaseStudyPageSchemaExtender extends AbstractPageSchemaExtender
++{
++    /**
++     * @param array<int, mixed> $tabs
++     * @return array<int, mixed>
++     */
++    #[Override]
++    public function extendTabs(Schema $schema, array $tabs): array
++    {
++        $record = $schema->getRecord();
++
++        if (! $record instanceof Page || $record->blueprint?->key !== 'case-study') {
++            return $tabs;
++        }
++
++        return [
++            ...$tabs,
++            Tab::make(__('case-study.details'))->schema([
++                TextInput::make('meta.case_study.client_name')
++                    ->label(__('case-study.client_name'))
++                    ->helperText(__('case-study.client_name_help'))
++                    ->required()
++                    ->maxLength(120),
++            ]),
++        ];
++    }
++}
+diff -ruN a/app/Providers/AppServiceProvider.php b/app/Providers/AppServiceProvider.php
+--- a/app/Providers/AppServiceProvider.php
++++ b/app/Providers/AppServiceProvider.php
+@@ -6,6 +6,9 @@
+ 
+ use App\Filament\Configurators\Pages\CaseStudyPageConfigurator;
+ use App\Filament\Configurators\Pages\ServicePageConfigurator;
++use App\Filament\Extenders\CaseStudyPageSchemaExtender;
++use App\Support\CaseStudyRenderDataContributor;
++use Capell\Admin\Contracts\Extenders\PageSchemaExtender;
+ use App\Filament\Widgets\StudioSettingsWidget;
+ use App\Models\User;
+ use App\Support\StudioRenderDataContributor;
+@@ -27,10 +30,16 @@
+     public function register(): void
+     {
+         $this->app->tag([StudioRenderDataContributor::class], PublicRenderDataContributor::TAG);
++        $this->app->tag([
++            CaseStudyRenderDataContributor::class,
++        ], PublicRenderDataContributor::TAG);
+     }
+ 
+     public function boot(): void
+     {
++        $this->app->tag([
++            CaseStudyPageSchemaExtender::class,
++        ], PageSchemaExtender::TAG);
+         CapellAdmin::registerDashboardFilamentWidget(StudioSettingsWidget::class, DashboardEnum::Main);
+         CapellAdmin::contributeToAdminSurface(AdminSurfaceContributionData::configurator(
+             class: CaseStudyPageConfigurator::class, group: 'Pages', name: 'CaseStudy', owner: 'app',
+diff -ruN a/app/Support/CaseStudyRenderDataContributor.php b/app/Support/CaseStudyRenderDataContributor.php
+--- a/app/Support/CaseStudyRenderDataContributor.php
++++ b/app/Support/CaseStudyRenderDataContributor.php
+@@ -0,0 +1,71 @@
++<?php
++
++declare(strict_types=1);
++
++namespace App\Support;
++
++use App\Data\CaseStudyData;
++use Capell\Core\Models\Page;
++use Capell\Frontend\Contracts\PublicRenderDataContributor;
++use Capell\Frontend\Data\FrontendRenderContextData;
++use Capell\Frontend\Data\PublicRenderDataCacheDependencyData;
++use Capell\Frontend\Data\PublicRenderDataContributionData;
++use Capell\Frontend\Data\PublicRenderDataContributionMetadataData;
++use LogicException;
++use Override;
++
++final class CaseStudyRenderDataContributor implements PublicRenderDataContributor
++{
++    #[Override]
++    public function key(): string
++    {
++        return 'case-study';
++    }
++
++    #[Override]
++    public function supports(FrontendRenderContextData $context): bool
++    {
++        return ! $context->isError
++            && $context->page instanceof Page
++            && $context->page::class === Page::class
++            && $context->page->blueprint?->key === 'case-study';
++    }
++
++    #[Override]
++    public function cacheDependencyModelTypes(): array
++    {
++        return [Page::class];
++    }
++
++    #[Override]
++    public function metadata(FrontendRenderContextData $context): PublicRenderDataContributionMetadataData
++    {
++        $page = $context->page;
++
++        if (! $page instanceof Page) {
++            throw new LogicException('Case study data requires a Page context.');
++        }
++
++        return new PublicRenderDataContributionMetadataData(
++            fingerprint: hash('sha256', $this->clientName($context)),
++            cacheDependencies: [
++                PublicRenderDataCacheDependencyData::forModel($page),
++            ],
++        );
++    }
++
++    #[Override]
++    public function contribute(FrontendRenderContextData $context): PublicRenderDataContributionData
++    {
++        return new PublicRenderDataContributionData(
++            new CaseStudyData($this->clientName($context)),
++        );
++    }
++
++    private function clientName(FrontendRenderContextData $context): string
++    {
++        $value = data_get($context->page?->meta, 'case_study.client_name');
++
++        return is_string($value) ? $value : '';
++    }
++}
+diff -ruN a/lang/en/case-study.php b/lang/en/case-study.php
+--- a/lang/en/case-study.php
++++ b/lang/en/case-study.php
+@@ -0,0 +1,9 @@
++<?php
++
++declare(strict_types=1);
++
++return [
++    'details' => 'Case study',
++    'client_name' => 'Client name',
++    'client_name_help' => 'The client credited on the public case study.',
++];
+diff -ruN a/resources/views/capell/themes/capell-app/studio/layout.blade.php b/resources/views/capell/themes/capell-app/studio/layout.blade.php
+--- a/resources/views/capell/themes/capell-app/studio/layout.blade.php
++++ b/resources/views/capell/themes/capell-app/studio/layout.blade.php
+@@ -14,6 +14,14 @@
+     <p class="eyebrow">{{ $studio->kind === 'case-study' ? __('starter.case_study') : __('starter.eyebrow') }}</p>
+     <h1>{{ $studio->title }}</h1><p class="intro">{{ $studio->summary }}</p>
+     @if($studio->kind === 'case-study')<dl><dt>{{ __('starter.client') }}</dt><dd>{{ $studio->client }}</dd><dt>{{ __('starter.year') }}</dt><dd>{{ $studio->year }}</dd></dl>@endif
++    @php ($caseStudy = $publicRenderData->extensionData('case-study'))
++
++    @if ($caseStudy !== null && $caseStudy->clientName !== '')
++        <dl>
++            <dt>{{ __('case-study.client_name') }}</dt>
++            <dd>{{ $caseStudy->clientName }}</dd>
++        </dl>
++    @endif
+     @if($studio->kind === 'service')
+         <p class="price">{{ __('starter.price') }}: {{ $studio->price }}</p>
+     @endif

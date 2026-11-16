@@ -43,6 +43,13 @@ jobs:
           cd x
           vendor/bin/pest --ci
           php artisan capell:doctor --no-interaction
+      - name: Check the applied files match the published guides
+        run: |
+          base=https://raw.githubusercontent.com/capell-app/capell/main/docs/getting-started
+          curl -fsS "$base/build-your-first-page-type.md" -o "$RUNNER_TEMP/page-type.md"
+          curl -fsS "$base/add-a-custom-page-field.md" -o "$RUNNER_TEMP/custom-field.md"
+          python3 .github/guide/check-guide-patch.py .github/guide/service-page-type.patch "$RUNNER_TEMP/page-type.md"
+          python3 .github/guide/check-guide-patch.py .github/guide/custom-field.patch "$RUNNER_TEMP/custom-field.md"
       - name: Follow the client site guide
         working-directory: ${{ runner.temp }}/starter-consumer/x
         run: |
@@ -64,6 +71,11 @@ jobs:
           curl -fsS http://localhost:8000/services/brand-sprint | grep -F 'From £4,000'
           kill "$server_pid"
           wait "$server_pid" || true
+          patch -p1 < "$GITHUB_WORKSPACE/.github/guide/custom-field.patch"
+          cp "$GITHUB_WORKSPACE/.github/guide/custom-field-walk.php" tests/Feature/CustomFieldGuideTest.php
+          vendor/bin/pest --ci tests/Feature/CustomFieldGuideTest.php
+          rm tests/Feature/CustomFieldGuideTest.php
+          patch -R -p1 < "$GITHUB_WORKSPACE/.github/guide/custom-field.patch"
           patch -R -p1 < "$GITHUB_WORKSPACE/.github/guide/service-page-type.patch"
           cp "$RUNNER_TEMP/guide-database.sqlite" database/database.sqlite
           php artisan optimize:clear
