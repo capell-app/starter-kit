@@ -21,6 +21,8 @@ use Capell\Core\Models\Page;
 use Capell\Core\Models\Site;
 use Capell\Core\Models\Theme;
 use Capell\Core\Support\Runtime\RuntimeRolePackageManifest;
+use GuzzleHttp\Psr7\Uri;
+use GuzzleHttp\Psr7\UriResolver;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Filesystem\FilesystemManager;
@@ -51,22 +53,12 @@ it('renders CMS pages through the local theme with no authoring state', function
         ->and($stylesheets->length)->toBe(1);
 
     $href = $stylesheets->item(0)->getAttribute('href');
-    $url = parse_url($href);
-    expect($url)->toBeArray();
-    if (! str_starts_with($href, '/')) {
-        expect($url['scheme'] ?? null)->toBe(parse_url(config('app.url'), PHP_URL_SCHEME))
-            ->and($url['host'] ?? null)->toBe(parse_url(config('app.url'), PHP_URL_HOST))
-            ->and($url['port'] ?? null)->toBe(parse_url(config('app.url'), PHP_URL_PORT));
-    } else {
-        expect($href)->not->toStartWith('//');
-    }
+    $stylesheet = UriResolver::resolve(new Uri(url($url)), new Uri($href))
+        ->withQuery('')->withFragment('');
+    expect((string) $stylesheet)->toBe(url('/css/starter.css'));
 
-    $path = $url['path'] ?? '';
-    expect($path)->toStartWith('/')->toEndWith('.css');
-    $asset = realpath(public_path(ltrim($path, '/')));
-    expect($asset)->toBeString();
-    expect($asset)->toStartWith(realpath(public_path()).DIRECTORY_SEPARATOR)
-        ->and(is_file($asset))->toBeTrue()
+    $asset = public_path('css/starter.css');
+    expect(is_file($asset))->toBeTrue()
         ->and(is_readable($asset))->toBeTrue()
         ->and(filesize($asset))->toBeGreaterThan(0);
 
