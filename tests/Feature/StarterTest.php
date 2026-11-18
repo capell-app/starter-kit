@@ -45,9 +45,31 @@ it('renders CMS pages through the local theme with no authoring state', function
     $dom = new DOMDocument;
     @$dom->loadHTML($response->getContent());
     $xpath = new DOMXPath($dom);
+    $stylesheets = $xpath->query('//link[@rel="stylesheet" and contains(@href,"starter.css")]');
     expect($xpath->query('//main')->length)->toBe(1)
         ->and($xpath->query('//h1')->length)->toBe(1)
-        ->and($xpath->query('//link[@rel="stylesheet" and contains(@href,"starter.css")]')->length)->toBe(1);
+        ->and($stylesheets->length)->toBe(1);
+
+    $href = $stylesheets->item(0)->getAttribute('href');
+    $url = parse_url($href);
+    expect($url)->toBeArray();
+    if (! str_starts_with($href, '/')) {
+        expect($url['scheme'] ?? null)->toBe(parse_url(config('app.url'), PHP_URL_SCHEME))
+            ->and($url['host'] ?? null)->toBe(parse_url(config('app.url'), PHP_URL_HOST))
+            ->and($url['port'] ?? null)->toBe(parse_url(config('app.url'), PHP_URL_PORT));
+    } else {
+        expect($href)->not->toStartWith('//');
+    }
+
+    $path = $url['path'] ?? '';
+    expect($path)->toStartWith('/')->toEndWith('.css');
+    $asset = realpath(public_path(ltrim($path, '/')));
+    expect($asset)->toBeString();
+    expect($asset)->toStartWith(realpath(public_path()).DIRECTORY_SEPARATOR)
+        ->and(is_file($asset))->toBeTrue()
+        ->and(is_readable($asset))->toBeTrue()
+        ->and(filesize($asset))->toBeGreaterThan(0);
+
     $response->assertDontSee('wire:id', false)->assertDontSee('blueprint_id')->assertDontSee('data-capell');
 })->with(['/', '/work/field-notes', '/contact']);
 
