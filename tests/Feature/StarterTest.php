@@ -21,6 +21,8 @@ use Capell\Core\Models\Page;
 use Capell\Core\Models\Site;
 use Capell\Core\Models\Theme;
 use Capell\Core\Support\Runtime\RuntimeRolePackageManifest;
+use GuzzleHttp\Psr7\Uri;
+use GuzzleHttp\Psr7\UriResolver;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Filesystem\FilesystemManager;
@@ -45,9 +47,21 @@ it('renders CMS pages through the local theme with no authoring state', function
     $dom = new DOMDocument;
     @$dom->loadHTML($response->getContent());
     $xpath = new DOMXPath($dom);
+    $stylesheets = $xpath->query('//link[@rel="stylesheet" and contains(@href,"starter.css")]');
     expect($xpath->query('//main')->length)->toBe(1)
         ->and($xpath->query('//h1')->length)->toBe(1)
-        ->and($xpath->query('//link[@rel="stylesheet" and contains(@href,"starter.css")]')->length)->toBe(1);
+        ->and($stylesheets->length)->toBe(1);
+
+    $href = $stylesheets->item(0)->getAttribute('href');
+    $stylesheet = UriResolver::resolve(new Uri(url($url)), new Uri($href))
+        ->withQuery('')->withFragment('');
+    expect((string) $stylesheet)->toBe(url('/css/starter.css'));
+
+    $asset = public_path('css/starter.css');
+    expect(is_file($asset))->toBeTrue()
+        ->and(is_readable($asset))->toBeTrue()
+        ->and(filesize($asset))->toBeGreaterThan(0);
+
     $response->assertDontSee('wire:id', false)->assertDontSee('blueprint_id')->assertDontSee('data-capell');
 })->with(['/', '/work/field-notes', '/contact']);
 
